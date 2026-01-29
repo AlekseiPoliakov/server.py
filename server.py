@@ -1,4 +1,5 @@
 import os
+import sqlite3
 from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel
 from main import MatchPredictor  # Твоя программа
@@ -14,7 +15,7 @@ class AnalysisRequest(BaseModel):
 async def analyze_match(data: AnalysisRequest):
     try:
         # 1. Запускаем твой расчет из main.py
-        predictor = MatchPredictor()
+        predictor = MatchPredictor(data_dir=".")
         # Вызываем метод из твоего класса
         prediction = predictor.predict(data.home_team, data.away_team)
         

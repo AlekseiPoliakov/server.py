@@ -14,13 +14,22 @@ from datetime import datetime, timezone
 from logging.handlers import RotatingFileHandler
 
 TEAM_MAPPING = {
-    "man utd": "manchester united",
-    "man city": "manchester city",
+    "west ham united": "west ham",
     "tottenham hotspur": "tottenham",
-    "nottm forest": "nottingham forest",
-    "sheff utd": "sheffield united",
-    "west ham": "west ham united",
-    # Добавь сюда остальные команды, если они были
+    "brighton & hove albion": "brighton",
+    "manchester city": "man city",
+    "wolverhampton wanderers": "wolves",
+    "nottingham forest": "nottm forest",
+    "manchester united": "man united",
+    "newcastle united": "newcastle",
+    "aston villa": "aston villa",
+    "crystal palace": "crystal palace",
+    "fulham": "fulham",
+    "brentford": "brentford",
+    "bournemouth": "bournemouth",
+    "southampton": "southampton",
+    "leicester city": "leicester",
+    "ipswich town": "ipswich",
 }
 
 # --- НОВЫЙ МЕТОД: ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ ДЛЯ РАСЧЕТА МАРЖИ ---
