@@ -10,16 +10,23 @@ class AnalysisRequest(BaseModel):
     home_team: str
     away_team: str
     user_id: str
+    # Поля для коэффициентов от пользователя
+    odds_p1: float = 0.0
+    odds_x: float = 0.0
+    odds_p2: float = 0.0
+    odds_tb25: float = 0.0
+    odds_tm25: float = 0.0
+    odds_btts_yes: float = 0.0
 
 @app.post("/analyze")
 async def analyze_match(data: AnalysisRequest):
     try:
-        # 1. Запускаем твой расчет из main.py
+        # Инициализируем твой MatchPredictor
         predictor = MatchPredictor(data_dir=".")
-        # Вызываем метод из твоего класса
-        prediction = predictor.predict(data.home_team, data.away_team)
         
-        # 2. Возвращаем результат в приложение
+        # Вызываем расчет (Python подхватит данные)
+        prediction = predictor.predict(data.home_team, data.away_team)
+
         return {"status": "success", "prediction": prediction}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
