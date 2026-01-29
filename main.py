@@ -7,90 +7,21 @@ import pandas as pd
 import random
 import requests
 import time
-import sqlite3
-from fastapi import FastAPI, Header, HTTPException
-from pydantic import BaseModel
 from dataclasses import dataclass
 from typing import Optional, Dict, List, Any
 from scipy.stats import skellam, poisson
 from datetime import datetime, timezone
 from logging.handlers import RotatingFileHandler
-from main import MatchPredictor, TEAM_MAPPING
 
 TEAM_MAPPING = {
-    "west ham united": "west ham",
+    "man utd": "manchester united",
+    "man city": "manchester city",
     "tottenham hotspur": "tottenham",
-    "sunderland": "sunderland",
-    "brighton & hove albion": "brighton",
-    "manchester city": "man city",
-    "wolverhampton wanderers": "wolves",
-    "nottingham forest": "nottm forest",
-    "manchester united": "man united",
-    "arsenal": "arsenal",
-    "leeds united": "leeds",
-    "everton": "everton",
-    "liverpool": "liverpool",
-    "chelsea": "chelsea",
-    "newcastle united": "newcastle",
-    "aston villa": "aston villa",
-    "crystal palace": "crystal palace",
-    "fulham": "fulham",
-    "brentford": "brentford",
-    "bournemouth": "bournemouth",
-    "southampton": "southampton",
-    "leicester city": "leicester",
-    "ipswich town": "ipswich",
+    "nottm forest": "nottingham forest",
+    "sheff utd": "sheffield united",
+    "west ham": "west ham united",
+    # Добавь сюда остальные команды, если они были
 }
-
-app = FastAPI()
-
-# База данных для хранения счетов (создается один раз)
-def init_db():
-    conn = sqlite3.connect('users.db')
-    conn.execute('CREATE TABLE IF NOT EXISTS users (user_id INTEGER PRIMARY KEY, balance REAL DEFAULT 0)')
-    conn.commit()
-    conn.close()
-
-init_db()
-
-class AnalysisRequest(BaseModel):
-    match_id: str
-    home_team: str
-    away_team: str
-
-@app.post("/analyze")
-async def analyze_match(data: AnalysisRequest, authorization: str = Header(None)):
-    # 1. Здесь будет логика проверки Telegram initData (безопасность)
-    user_id = 12345 # Вытаскиваем из authorization
-    
-    conn = sqlite3.connect('users.db')
-    user = conn.execute('SELECT balance FROM users WHERE user_id = ?', (user_id,)).fetchone()
-    
-    # 2. Проверка баланса
-    if not user or user[0] < 50:
-        return {"error": "insufficient_balance", "message": "Нужно 50 звезд"}
-
-    # 3. Запуск твоего движка Rocket V5.3
-    predictor = MatchPredictor()
-    # Твой метод предсказания из main.py
-    prediction = predictor.predict(data.home_team, data.away_team) 
-    
-    # 4. Списание средств
-    conn.execute('UPDATE users SET balance = balance - 50 WHERE user_id = ?', (user_id,))
-    conn.commit()
-    conn.close()
-
-    return {"status": "success", "analysis_text": prediction}
-
-LOG_FILE = "rocket_v53_titanium.log"
-handler = RotatingFileHandler(
-    LOG_FILE, maxBytes=10 * 10**6, backupCount=5, encoding="utf-8"
-)
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[handler, logging.StreamHandler()],
-)
 
 # --- НОВЫЙ МЕТОД: ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ ДЛЯ РАСЧЕТА МАРЖИ ---
 def calculate_margin_global(odds_list: list) -> float:
@@ -155,7 +86,7 @@ class TitaniumBrain:
         return random.choice(self.phrases[key]) + f" [YIELD: {self.roi:+.2f}%]"
 
 
-class DiamondRocketTitanium:
+class MatchPredictor:
     def __init__(self, data_dir: str):
         self.cfg = {
             "api_key": "8a25e55c920042d09149a9b37b6a2356",
@@ -223,16 +154,6 @@ class DiamondRocketTitanium:
         self.history_path = os.path.join(data_dir, "prediction_history.json")
 
         self.initialize()
-        # Глобальный конфигуратор турниров (ID для API и веса влияния на усталость)
-        self.tournaments_config = {
-            "Premier League": {"id": 2021, "weight": 1.0, "file": "pl.json"},
-            "Champions League": {"id": 2001, "weight": 1.15, "file": "cl.json"},
-            "Europa League": {"id": 2146, "weight": 1.10, "file": "el.json"},
-            "Championship": {"id": 2016, "weight": 1.0, "file": "championship.json"} 
-        }
-        # Папка для хранения календарей
-        self.fixtures_dir = os.path.join(data_dir, "history_data", "fixtures")
-        os.makedirs(self.fixtures_dir, exist_ok=True)
 
     def download_all_football_data(self):
         """[TITANIUM SYNC] Авто-загрузка результатов всех 6 турниров через API"""
@@ -1027,30 +948,8 @@ class DiamondRocketTitanium:
             with open(self.history_path, "w", encoding="utf-8") as f:
                 json.dump(history, f, indent=4, ensure_ascii=False)
 
-    import requests
-
-# Эндпоинт для тебя (админка), чтобы пополнять баланс пользователю после оплаты
-@app.post("/admin/add_balance")
-async def add_balance(user_id: int, amount: float, admin_key: str = Header(None)):
-    if admin_key != "твой_секретный_ключ": # Защита, чтобы только ты мог начислять деньги
-        raise HTTPException(status_code=403)
-    
-    conn = sqlite3.connect('users.db')
-    conn.execute('INSERT INTO users (user_id, balance) VALUES (?, ?) ON CONFLICT(user_id) DO UPDATE SET balance = balance + ?', (user_id, amount, amount))
-    conn.commit()
-    conn.close()
-    return {"status": "success", "new_balance": "updated"}
-
-# Эндпоинт для проверки баланса в приложении
-@app.get("/user/balance")
-async def get_balance(user_id: int):
-    conn = sqlite3.connect('users.db')
-    user = conn.execute('SELECT balance FROM users WHERE user_id = ?', (user_id,)).fetchone()
-    conn.close()
-    return {"balance": user[0] if user else 0}
-
 
 if __name__ == "__main__":
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     DATA = os.path.join(BASE_DIR, "data", "premierleague")
-    DiamondRocketTitanium(DATA).run_cli()
+    MatchPredictor(DATA).run_cli()
